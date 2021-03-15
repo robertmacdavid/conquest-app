@@ -181,10 +181,10 @@ public class ConQuest implements ConQuestService {
                 log.info("Received ConQuest report: {}", report);
                 // TODO: add ACL rule with X second TTL for received reports
             } else {
-                log.debug("Received packet-in that wasn't for us. Do nothing.");
+                //log.info("Received packet-in that wasn't for us. Do nothing.");
                 ByteBuffer pktBuf = context.inPacket().unparsed();
                 String strBuf = getHexString(pktBuf.array());
-                log.debug("unparsed packet:");
+                log.info("Received packet-in not for us: {}", strBuf);
                 log.debug(strBuf);
             }
         }
