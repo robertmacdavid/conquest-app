@@ -35,6 +35,7 @@ import org.onosproject.net.flow.FlowRuleService;
 import org.onosproject.net.flow.criteria.PiCriterion;
 import org.onosproject.net.group.DefaultGroupDescription;
 import org.onosproject.net.group.DefaultGroupKey;
+import org.onosproject.net.group.Group;
 import org.onosproject.net.group.GroupBuckets;
 import org.onosproject.net.group.GroupDescription;
 import org.onosproject.net.group.GroupService;
@@ -60,6 +61,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedList;
@@ -176,7 +178,8 @@ public class ConQuest implements ConQuestService {
                 ConQuestReport report = new ConQuestReport(srcIp, dstIp, srcPort, dstPort, protocol, queueSize);
 
                 receivedReports.add(report);
-                log.info("Received ConQuest report.");
+                log.info("Received ConQuest report: {}", report);
+                // TODO: add ACL rule with X second TTL for received reports
             } else {
                 log.debug("Received packet-in that wasn't for us. Do nothing.");
                 ByteBuffer pktBuf = context.inPacket().unparsed();
@@ -259,31 +262,33 @@ public class ConQuest implements ConQuestService {
         }
     }
 
+    private void cleanUp() {
+        // Clean up all groups installed by this app
+        log.info("Cleaning up groups and table entries that may be hanging around.");
+        for (Device device : deviceService.getAvailableDevices()) {
+            for ( Group group : groupService.getGroups(device.id(), appId)) {
+                groupService.removeGroup(device.id(), group.appCookie(), appId);
+            }
+        }
+        //groupService.removeListener();
+        // Clean up all table entries installed by this app
+        flowRuleService.removeFlowRulesById(appId);
+    }
+
 
     private void addCloneSessions(DeviceId deviceId) {
-        // Mirroring sessions for report cloning.
         Set<Integer> cloneSessionIds = Constants.MIRROR_SESSION_IDS;
-        final var optCpuPort = getCpuPort(deviceId);
-        if (optCpuPort.isEmpty()) {
-            log.warn("Cannot find CPU port for device {}, skipping adding clone sessions", deviceId);
-            return;
+        for (int cloneSessionId : cloneSessionIds) {
+            log.info("Adding clone session {} to device {}", cloneSessionId, deviceId);
+            final GroupDescription cloneGroup = ConQuestUtils.buildCloneGroup(
+                    appId,
+                    deviceId,
+                    cloneSessionId,
+                    // Ports where to clone the packet.
+                    // Just controller in this case.
+                    Collections.singleton(PortNumber.CONTROLLER));
+            groupService.addGroup(cloneGroup);
         }
-        final int cpuPort = optCpuPort.get();
-        cloneSessionIds.stream()
-                .map(sessionId -> {
-                    final var buckets = ImmutableList.of(
-                            createCloneGroupBucket(DefaultTrafficTreatment.builder()
-                                    .setOutput(PortNumber.portNumber(cpuPort))
-                                    .build()));
-                    return new DefaultGroupDescription(
-                            deviceId, GroupDescription.Type.CLONE,
-                            new GroupBuckets(buckets),
-                            new DefaultGroupKey(ImmutableByteSequence.copyFrom(sessionId).asArray()),
-                            sessionId, appId);
-                })
-                .forEach(groupService::addGroup);
-        log.info("Added clone sessions for device {}", deviceId);
-
     }
 
 
@@ -291,43 +296,22 @@ public class ConQuest implements ConQuestService {
         for (Device device : deviceService.getAvailableDevices()) {
             addCloneSessions(device.id());
         }
-        /*
-        for (Device device : deviceService.getAvailableDevices()) {
-            log.info("Adding clone session {} to device {}", Constants.CONQUEST_CLONE_SESSION_ID, device.id());
-            final GroupDescription cloneGroup = ConQuestUtils.buildCloneGroup(
-                    appId,
-                    device.id(),
-                    Constants.CONQUEST_CLONE_SESSION_ID,
-                    // Ports where to clone the packet.
-                    // Just controller in this case.
-                    Collections.singleton(PortNumber.CONTROLLER));
-            groupService.addGroup(cloneGroup);
-        }
-         */
         log.info("Added all clone sessions.");
     }
 
     private void removeCloneSessions(DeviceId deviceId) {
         Set<Integer> cloneSessionIds = Constants.MIRROR_SESSION_IDS;
-        final var optCpuPort = getCpuPort(deviceId);
-        if (optCpuPort.isEmpty()) {
-            log.warn("Cannot find CPU port for device {}, skipping removing clone sessions", deviceId);
-            return;
+        for (int cloneSessionId : cloneSessionIds) {
+            log.info("Removing clone session {} from device {}", cloneSessionId, deviceId);
+            final GroupDescription cloneGroup = ConQuestUtils.buildCloneGroup(
+                    appId,
+                    deviceId,
+                    cloneSessionId,
+                    // Ports where to clone the packet.
+                    // Just controller in this case.
+                    Collections.singleton(PortNumber.CONTROLLER));
+            groupService.removeGroup(deviceId, cloneGroup.appCookie(), appId);
         }
-        final int cpuPort = optCpuPort.get();
-        for (int sessionId : cloneSessionIds) {
-            final var buckets = ImmutableList.of(
-                    createCloneGroupBucket(DefaultTrafficTreatment.builder()
-                            .setOutput(PortNumber.portNumber(cpuPort))
-                            .build()));
-            var groupDescription = new DefaultGroupDescription(
-                    deviceId, GroupDescription.Type.CLONE,
-                    new GroupBuckets(buckets),
-                    new DefaultGroupKey(ImmutableByteSequence.copyFrom(sessionId).asArray()),
-                    sessionId, appId);
-            groupService.removeGroup(deviceId, groupDescription.appCookie(), appId);
-        }
-        log.info("Removing clone sessions for device {}", deviceId);
     }
 
     private void removeAllCloneSessions() {
