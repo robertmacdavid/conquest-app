@@ -9,6 +9,8 @@ import java.util.Set;
 public class Constants {
     public static final String APP_NAME = "org.princeton.conquest-app";
 
+    public static final int DEFAULT_BLOCK_DURATION = 5;
+
     // P4 Constants
     public static final Set<Integer> MIRROR_SESSION_IDS = Set.of(400, 401, 402, 403);
 
@@ -39,4 +41,15 @@ public class Constants {
     public static PiActionId MARK_ECN = PiActionId.of("FabricEgress.conquest_egress.mark_ECN");
     public static PiActionId TRIGGER_REPORT = PiActionId.of("FabricEgress.conquest_egress.trigger_report");
     public static PiActionId NOT_TRIGGER_REPORT = PiActionId.of("FabricEgress.conquest_egress.not_trigger_report");
+
+
+    // ACL P4 Entities
+    public static PiTableId ACL_TABLE = PiTableId.of("FabricEgress.acl.acl");
+    public static PiActionId ACL_DROP = PiActionId.of("FabricEgress.acl.drop");
+
+    public static PiMatchFieldId ACL_IP_SRC = PiMatchFieldId.of("ipv4_src");
+    public static PiMatchFieldId ACL_IP_DST = PiMatchFieldId.of("ipv4_dst");
+    public static PiMatchFieldId ACL_PORT_SRC = PiMatchFieldId.of("l4_sport");
+    public static PiMatchFieldId ACL_PORT_DST = PiMatchFieldId.of("l4_dport");
+    public static PiMatchFieldId ACL_IP_PROTO = PiMatchFieldId.of("ip_proto");
 }
