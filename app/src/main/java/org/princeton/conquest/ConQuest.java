@@ -21,7 +21,6 @@ import org.jboss.netty.util.Timer;
 import org.jboss.netty.util.TimerTask;
 import org.onlab.packet.Ethernet;
 import org.onlab.packet.Ip4Address;
-import org.onosproject.cfg.ComponentConfigService;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.net.Device;
@@ -42,7 +41,6 @@ import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
 import org.onosproject.net.pi.runtime.PiAction;
-import org.onosproject.net.pi.service.PiPipeconfService;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -128,11 +126,19 @@ public class ConQuest implements ConQuestService {
 
         // Deregister the packet processor.
         packetService.removeProcessor(processor);
+        unblockingTimer.stop();
         // Remove clone sessions and flow rules from all available devices
         cleanUp();
 
         log.info("Stopped");
     }
+
+
+    @Modified
+    public void modified(ComponentContext context) {
+        log.info("Reconfigured");
+    }
+
 
     private void blockFlow(DeviceId deviceId, ConQuestReport report) {
         if (blockDuration == 0)
@@ -320,28 +326,16 @@ public class ConQuest implements ConQuestService {
     }
 
 
-    @Modified
-    public void modified(ComponentContext context) {
-        log.info("Reconfigured");
-    }
-
-
     private class CustomPacketProcessor implements PacketProcessor {
 
         private final Logger log = LoggerFactory.getLogger(getClass());
 
         @Override
         public void process(PacketContext context) {
-            // Prints the unparsed packet in hex.
             Ethernet packet = context.inPacket().parsed();
             DeviceId sourceDevice = context.inPacket().receivedFrom().deviceId();
 
             if (packet.getEtherType() == Constants.CONQUEST_ETHERTYPE) {
-
-                //ByteBuffer pktBuf = context.inPacket().unparsed();
-                //String strBuf = getHexString(pktBuf.array());
-                //log.info("PARSED packet:");
-                //log.info(strBuf);
 
                 byte[] bstream = packet.getPayload().serialize();
 
@@ -381,7 +375,7 @@ public class ConQuest implements ConQuestService {
         }
 
         @Override
-        public void run(Timeout timeout) throws Exception {
+        public void run(Timeout timeout) {
             log.info("Unblocking {}", blockedFlowReport);
             flowRuleService.removeFlowRules(this.blockingRule);
             blockedFlows.remove(this.blockedFlowReport);
