@@ -185,6 +185,7 @@ public class ConQuest implements ConQuestService {
                 ByteBuffer pktBuf = context.inPacket().unparsed();
                 String strBuf = getHexString(pktBuf.array());
                 log.info("Received packet-in not for us: {}", strBuf);
+                log.info("EtherType was: {}", packet.getEtherType());
                 log.debug(strBuf);
             }
         }
