@@ -71,7 +71,7 @@ public class ConQuest implements ConQuestService {
 
     private ApplicationId appId;
     private static final int DEFAULT_PRIORITY = 10;
-    private int blockDuration = Constants.DEFAULT_BLOCK_DURATION;
+    private int blockDuration = Constants.DEFAULT_BLOCK_DURATION_MS; // milliseconds
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected DeviceService deviceService;
