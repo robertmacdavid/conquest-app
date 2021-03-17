@@ -9,7 +9,7 @@ import java.util.Set;
 public class Constants {
     public static final String APP_NAME = "org.princeton.conquest-app";
 
-    public static final int DEFAULT_BLOCK_DURATION_MS = 1000;
+    public static final int DEFAULT_BLOCK_DURATION_MS = 10000;
 
     // P4 Constants
     public static final Set<Integer> MIRROR_SESSION_IDS = Set.of(400, 401, 402, 403);
