@@ -31,8 +31,8 @@ public class Constants {
     // P4 Entities
     public static PiTableId REPORT_TRIGGER_TABLE = PiTableId.of("FabricEgress.conquest_egress.tb_per_flow_action");
 
-    public static PiMatchFieldId FLOW_SIZE_IN_QUEUE = PiMatchFieldId.of("flow_size_in_queue");
-    public static PiMatchFieldId QUEUE_DELAY = PiMatchFieldId.of("queue_delay");
+    public static PiMatchFieldId FLOW_SIZE_IN_QUEUE = PiMatchFieldId.of("snap_0");
+    public static PiMatchFieldId QUEUE_DELAY = PiMatchFieldId.of("q_delay");
     public static PiMatchFieldId RANDOM_BITS = PiMatchFieldId.of("random_bits");
     public static PiMatchFieldId ECN_BITS = PiMatchFieldId.of("ecn");
 
