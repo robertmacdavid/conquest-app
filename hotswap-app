@@ -1,0 +1,2 @@
+#!/bin/bash
+./onos-tools/onos-app localhost reinstall! ./app/target/conquest-app-1.0.oar
