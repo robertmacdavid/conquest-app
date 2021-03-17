@@ -1,15 +1,17 @@
 package org.princeton.conquest;
 
 import org.onlab.packet.Ip4Address;
+import org.onlab.util.ImmutableByteSequence;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class ConQuestReport {
 
     Ip4Address srcIp;
     Ip4Address dstIp;
-    protected short srcPort;
-    protected short dstPort;
-    protected byte protocol;
-    protected int queueSize;
+    ImmutableByteSequence srcPort;
+    ImmutableByteSequence dstPort;
+    ImmutableByteSequence protocol;
+    ImmutableByteSequence queueSize;
 
     /**
      * Constructs ConQuest Report data
@@ -17,10 +19,10 @@ public class ConQuestReport {
     public ConQuestReport() {
         this.srcIp = Ip4Address.ZERO;
         this.dstIp = Ip4Address.ZERO;
-        this.srcPort = 0;
-        this.dstPort = 0;
-        this.protocol = 0;
-        this.queueSize = -1;
+        this.srcPort = ImmutableByteSequence.ofZeros(16);
+        this.dstPort = ImmutableByteSequence.ofZeros(16);
+        this.protocol = ImmutableByteSequence.ofZeros(8);
+        this.queueSize = ImmutableByteSequence.ofZeros(32);
     }
 
     /**
@@ -34,19 +36,23 @@ public class ConQuestReport {
      * @param queueSize    queue occupancy of the reported flow
      */
     public ConQuestReport(Ip4Address srcIpAddress, Ip4Address dstIpAddress,
-                          short srcPort, short dstPort,
-                          byte protocol, int queueSize) {
+                          ImmutableByteSequence srcPort, ImmutableByteSequence dstPort,
+                          ImmutableByteSequence protocol, ImmutableByteSequence queueSize) {
         this.srcIp = srcIpAddress;
         this.dstIp = dstIpAddress;
+        checkArgument(srcPort.size() == 2, "L4 port must be 2 bytes");
+        checkArgument(dstPort.size() == 2, "L4 port must be 2 bytes");
         this.srcPort = srcPort;
         this.dstPort = dstPort;
+        checkArgument(protocol.size() == 1, "IP protocol must be 1 byte");
         this.protocol = protocol;
+        checkArgument(queueSize.size() == 4, "Queue occupancy must be 4 bytes");
         this.queueSize = queueSize;
     }
 
     public String toString() {
         String protocol;
-        switch (this.protocol) {
+        switch (this.protocol.asReadOnlyBuffer().get(0)) {
             case 1:
                 protocol = "ICMP";
                 break;
@@ -60,7 +66,7 @@ public class ConQuestReport {
                 protocol = "UNKNOWN";
                 break;
         }
-        return String.format("(%s, %s:%d->%s:%d, %d)", protocol,
+        return String.format("(%s, %s:%s->%s:%s, %s)", protocol,
                 this.srcIp.toString(), this.srcPort,
                 this.dstIp.toString(), this.dstPort, this.queueSize);
     }

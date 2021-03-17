@@ -21,6 +21,7 @@ import org.jboss.netty.util.Timer;
 import org.jboss.netty.util.TimerTask;
 import org.onlab.packet.Ethernet;
 import org.onlab.packet.Ip4Address;
+import org.onlab.util.ImmutableByteSequence;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.net.Device;
@@ -153,15 +154,15 @@ public class ConQuest implements ConQuestService {
     }
 
     private FlowRule buildBlockRuleFor(DeviceId deviceId, ConQuestReport report) {
-        int allOnes32 = 0xffffffff;
-        int allOnes16 = 0xffff;
-        int allOnes8 = 0xff;
+        ImmutableByteSequence allOnes32 = ImmutableByteSequence.ofOnes(32);
+        ImmutableByteSequence allOnes16 = ImmutableByteSequence.ofOnes(16);
+        ImmutableByteSequence allOnes8 = ImmutableByteSequence.ofOnes(8);
         PiCriterion match = PiCriterion.builder()
-                .matchTernary(Constants.ACL_IP_SRC, report.srcIp.toInt(), allOnes32)
-                .matchTernary(Constants.ACL_IP_DST, report.dstIp.toInt(), allOnes32)
-                .matchTernary(Constants.ACL_PORT_SRC, report.srcPort, allOnes16)
-                .matchTernary(Constants.ACL_PORT_DST, report.dstPort, allOnes16)
-                .matchTernary(Constants.ACL_IP_PROTO, report.protocol, allOnes8)
+                .matchTernary(Constants.ACL_IP_SRC, report.srcIp.toOctets(), allOnes32.asArray())
+                .matchTernary(Constants.ACL_IP_DST, report.dstIp.toOctets(), allOnes32.asArray())
+                .matchTernary(Constants.ACL_PORT_SRC, report.srcPort.asArray(), allOnes16.asArray())
+                .matchTernary(Constants.ACL_PORT_DST, report.dstPort.asArray(), allOnes16.asArray())
+                .matchTernary(Constants.ACL_IP_PROTO, report.protocol.asArray(), allOnes8.asArray())
                 .build();
 
         PiAction action = PiAction.builder()
@@ -344,10 +345,10 @@ public class ConQuest implements ConQuestService {
 
                 Ip4Address srcIp = Ip4Address.valueOf(bb.getInt());
                 Ip4Address dstIp = Ip4Address.valueOf(bb.getInt());
-                short srcPort = bb.getShort();
-                short dstPort = bb.getShort();
-                byte protocol = bb.get();
-                int queueSize = bb.getInt();
+                ImmutableByteSequence srcPort = ImmutableByteSequence.copyFrom(bb.getShort());
+                ImmutableByteSequence dstPort = ImmutableByteSequence.copyFrom(bb.getShort());
+                ImmutableByteSequence protocol = ImmutableByteSequence.copyFrom(bb.get());
+                ImmutableByteSequence queueSize = ImmutableByteSequence.copyFrom(bb.getInt());
 
                 ConQuestReport report = new ConQuestReport(srcIp, dstIp, srcPort, dstPort, protocol, queueSize);
 
