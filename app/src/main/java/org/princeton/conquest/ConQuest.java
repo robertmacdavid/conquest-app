@@ -171,7 +171,7 @@ public class ConQuest implements ConQuestService {
         return DefaultFlowRule.builder()
                 .forDevice(deviceId).fromApp(appId)
                 .makePermanent()
-                .forTable(Constants.REPORT_TRIGGER_TABLE)
+                .forTable(Constants.ACL_TABLE)
                 .withSelector(DefaultTrafficSelector.builder().matchPi(match).build())
                 .withTreatment(DefaultTrafficTreatment.builder().piTableAction(action).build())
                 .withPriority(DEFAULT_PRIORITY)
@@ -306,6 +306,7 @@ public class ConQuest implements ConQuestService {
     @Override
     public void addReportTrigger(DeviceId deviceId, int minQueueDelay, int minFlowSizeInQueue) {
         for (FlowRule rule : buildReportTriggerRules(deviceId, minQueueDelay, minFlowSizeInQueue)) {
+            log.info("Installing trigger rule {}", rule);
             flowRuleService.applyFlowRules(rule);
         }
         log.info("Added report trigger flow rules for device {}", deviceId);
