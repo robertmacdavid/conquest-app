@@ -44,8 +44,8 @@ public class Constants {
 
 
     // ACL P4 Entities
-    public static PiTableId ACL_TABLE = PiTableId.of("FabricEgress.acl.acl");
-    public static PiActionId ACL_DROP = PiActionId.of("FabricEgress.acl.drop");
+    public static PiTableId ACL_TABLE = PiTableId.of("FabricIngress.acl.acl");
+    public static PiActionId ACL_DROP = PiActionId.of("FabricIngress.acl.drop");
 
     public static PiMatchFieldId ACL_IP_SRC = PiMatchFieldId.of("ipv4_src");
     public static PiMatchFieldId ACL_IP_DST = PiMatchFieldId.of("ipv4_dst");
