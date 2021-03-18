@@ -140,8 +140,8 @@ public class ConQuest implements ConQuestService {
         log.info("Reconfigured");
     }
 
-
-    private void blockFlow(DeviceId deviceId, ConQuestReport report) {
+    @Override
+    public void blockFlow(DeviceId deviceId, ConQuestReport report) {
         if (blockDuration == 0)
             return;
         log.info("Blocking flow at device {} in response to report {}", deviceId, report);

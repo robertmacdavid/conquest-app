@@ -35,6 +35,13 @@ public interface ConQuestService {
     void setBlockDuration(int blockDuration);
 
     /**
+     * Temporarily block a flow by injecting a conquest report into the app. Intended for testing.
+     * @param deviceId the device at which the flow should be blocked
+     * @param report the report to inject into the app
+     */
+    void blockFlow(DeviceId deviceId, ConQuestReport report);
+
+    /**
      * Get a list of descriptions of currently blocked flow 5-tuples.
      * @return a list of 5-tuple strings
      */
