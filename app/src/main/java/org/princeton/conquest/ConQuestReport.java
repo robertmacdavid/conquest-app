@@ -8,9 +8,9 @@ public class ConQuestReport {
 
     Ip4Address srcIp;
     Ip4Address dstIp;
-    ImmutableByteSequence srcPort;
-    ImmutableByteSequence dstPort;
-    ImmutableByteSequence protocol;
+    short srcPort;
+    short dstPort;
+    byte protocol;
     ImmutableByteSequence queueSize;
 
     /**
@@ -19,10 +19,10 @@ public class ConQuestReport {
     public ConQuestReport() {
         this.srcIp = Ip4Address.ZERO;
         this.dstIp = Ip4Address.ZERO;
-        this.srcPort = ImmutableByteSequence.ofZeros(16);
-        this.dstPort = ImmutableByteSequence.ofZeros(16);
-        this.protocol = ImmutableByteSequence.ofZeros(8);
-        this.queueSize = ImmutableByteSequence.ofZeros(32);
+        this.srcPort = 0;
+        this.dstPort = 0;
+        this.protocol = 0;
+        this.queueSize = ImmutableByteSequence.ofZeros(4);
     }
 
     /**
@@ -36,38 +36,47 @@ public class ConQuestReport {
      * @param queueSize    queue occupancy of the reported flow
      */
     public ConQuestReport(Ip4Address srcIpAddress, Ip4Address dstIpAddress,
-                          ImmutableByteSequence srcPort, ImmutableByteSequence dstPort,
-                          ImmutableByteSequence protocol, ImmutableByteSequence queueSize) {
+                          short srcPort, short dstPort,
+                          byte protocol, ImmutableByteSequence queueSize) {
         this.srcIp = srcIpAddress;
         this.dstIp = dstIpAddress;
-        checkArgument(srcPort.size() == 2, "L4 port must be 2 bytes");
-        checkArgument(dstPort.size() == 2, "L4 port must be 2 bytes");
         this.srcPort = srcPort;
         this.dstPort = dstPort;
-        checkArgument(protocol.size() == 1, "IP protocol must be 1 byte");
         this.protocol = protocol;
-        checkArgument(queueSize.size() == 4, "Queue occupancy must be 4 bytes");
         this.queueSize = queueSize;
+    }
+
+    public int srcPortInt() {
+        return this.srcPort & 0xffff;
+    }
+
+    public int dstPortInt() {
+        return this.dstPort & 0xffff;
+    }
+
+    public int protocolInt() {
+        return this.protocol & 0xff;
     }
 
     public String toString() {
         String protocol;
-        switch (this.protocol.asReadOnlyBuffer().get(0)) {
-            case 1:
+        switch (this.protocol) {
+            case Constants.PROTO_ICMP:
                 protocol = "ICMP";
                 break;
-            case 6:
+            case Constants.PROTO_TCP:
                 protocol = "TCP";
                 break;
-            case 17:
+            case Constants.PROTO_UDP:
                 protocol = "UDP";
                 break;
             default:
-                protocol = String.format("PROTO:0x%o", this.protocol.asReadOnlyBuffer().get(0));
+                protocol = String.format("PROTO:%d", this.protocolInt());
                 break;
         }
-        return String.format("(%s, %s:%s->%s:%s, %s)", protocol,
-                this.srcIp.toString(), this.srcPort,
-                this.dstIp.toString(), this.dstPort, this.queueSize);
+        return String.format("(%s, %s:%d->%s:%d, Size:%s)", protocol,
+                this.srcIp.toString(), this.srcPortInt(),
+                this.dstIp.toString(), this.dstPortInt(),
+                this.queueSize);
     }
 }

@@ -21,6 +21,8 @@ import org.jboss.netty.util.Timer;
 import org.jboss.netty.util.TimerTask;
 import org.onlab.packet.Ethernet;
 import org.onlab.packet.Ip4Address;
+import org.onlab.packet.IpPrefix;
+import org.onlab.packet.TpPort;
 import org.onlab.util.ImmutableByteSequence;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
@@ -34,6 +36,7 @@ import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.FlowEntry;
 import org.onosproject.net.flow.FlowRule;
 import org.onosproject.net.flow.FlowRuleService;
+import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.criteria.PiCriterion;
 import org.onosproject.net.group.Group;
 import org.onosproject.net.group.GroupDescription;
@@ -42,6 +45,11 @@ import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
 import org.onosproject.net.pi.runtime.PiAction;
+import org.onosproject.segmentrouting.policy.api.DropPolicy;
+import org.onosproject.segmentrouting.policy.api.PolicyId;
+import org.onosproject.segmentrouting.policy.api.PolicyService;
+import org.onosproject.segmentrouting.policy.api.TrafficMatch;
+import org.onosproject.segmentrouting.policy.api.TrafficMatchId;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -78,6 +86,9 @@ public class ConQuest implements ConQuestService {
     protected DeviceService deviceService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
+    protected PolicyService policyService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected FlowRuleService flowRuleService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
@@ -93,6 +104,8 @@ public class ConQuest implements ConQuestService {
     private final Timer unblockingTimer = new HashedWheelTimer();
     private final CustomPacketProcessor processor = new CustomPacketProcessor();
     private final Set<ConQuestReport> blockedFlows = new HashSet<>();
+
+    private PolicyId blockingPolicyId;
 
 
     private String getHexString(byte[] byteBuffer) {
@@ -117,6 +130,8 @@ public class ConQuest implements ConQuestService {
         // Set up clone sessions on all available devices
         addAllCloneSessions();
 
+        blockingPolicyId = policyService.addOrUpdatePolicy(new DropPolicy());
+
         log.info("Started");
     }
 
@@ -130,6 +145,8 @@ public class ConQuest implements ConQuestService {
         unblockingTimer.stop();
         // Remove clone sessions and flow rules from all available devices
         cleanUp();
+
+        policyService.removePolicy(blockingPolicyId);
 
         log.info("Stopped");
     }
@@ -150,47 +167,44 @@ public class ConQuest implements ConQuestService {
         if (blockDuration > 0) {
             blockDurationString = String.format("for %dms", blockDuration);
         }
-        log.info("Blocking flow at device {} {} in response to report {}", deviceId, blockDurationString, report);
-        FlowRule rule = buildBlockRuleFor(deviceId, report);
-        flowRuleService.applyFlowRules(rule);
+
+        var trafficSelectorBuilder = DefaultTrafficSelector.builder()
+                .matchIPProtocol(report.protocol)
+                .matchIPSrc(IpPrefix.valueOf(report.srcIp, 32))
+                .matchIPDst(IpPrefix.valueOf(report.dstIp, 32));
+
+        TpPort srcPort = TpPort.tpPort(report.srcPortInt());
+        TpPort dstPort = TpPort.tpPort(report.dstPortInt());
+
+        if (report.protocol == Constants.PROTO_TCP) {
+            trafficSelectorBuilder
+                    .matchTcpSrc(srcPort)
+                    .matchTcpDst(dstPort);
+        } else if (report.protocol == Constants.PROTO_UDP) {
+            trafficSelectorBuilder
+                    .matchUdpSrc(srcPort)
+                    .matchUdpDst(dstPort);
+        }
+        TrafficSelector trafficSelector = trafficSelectorBuilder.build();
+
+        log.info("Blocking {} at device {} {} in response to report.",
+                trafficSelector, deviceId, blockDurationString);
+
+        TrafficMatchId trafficMatchId = policyService.addOrUpdateTrafficMatch(
+                new TrafficMatch(trafficSelector, blockingPolicyId));
+
         blockedFlows.add(report);
         if (blockDuration < 0)
             return;
-        unblockingTimer.newTimeout(new UnblockTimerTask(report, rule), blockDuration, TimeUnit.MILLISECONDS);
+        unblockingTimer.newTimeout(new UnblockTimerTask(report, trafficMatchId), blockDuration, TimeUnit.MILLISECONDS);
     }
 
-    private FlowRule buildBlockRuleFor(DeviceId deviceId, ConQuestReport report) {
-        ImmutableByteSequence allOnes32 = ImmutableByteSequence.ofOnes(4);
-        ImmutableByteSequence allOnes16 = ImmutableByteSequence.ofOnes(2);
-        ImmutableByteSequence allOnes8 = ImmutableByteSequence.ofOnes(1);
-
-        // TODO: only add ports to match if protocol is TCP or UDP
-        PiCriterion match = PiCriterion.builder()
-                .matchTernary(Constants.ACL_IP_SRC, report.srcIp.toOctets(), allOnes32.asArray())
-                .matchTernary(Constants.ACL_IP_DST, report.dstIp.toOctets(), allOnes32.asArray())
-                .matchTernary(Constants.ACL_PORT_SRC, report.srcPort.asArray(), allOnes16.asArray())
-                .matchTernary(Constants.ACL_PORT_DST, report.dstPort.asArray(), allOnes16.asArray())
-                .matchTernary(Constants.ACL_IP_PROTO, report.protocol.asArray(), allOnes8.asArray())
-                .build();
-
-        PiAction action = PiAction.builder()
-                .withId(Constants.ACL_DROP)
-                .build();
-
-        return DefaultFlowRule.builder()
-                .forDevice(deviceId).fromApp(appId)
-                .makePermanent()
-                .forTable(Constants.ACL_TABLE)
-                .withSelector(DefaultTrafficSelector.builder().matchPi(match).build())
-                .withTreatment(DefaultTrafficTreatment.builder().piTableAction(action).build())
-                .withPriority(DEFAULT_PRIORITY)
-                .build();
-    }
 
     @Override
     public void setBlockDuration(int blockDuration) {
         this.blockDuration = blockDuration;
     }
+
 
     @Override
     public Collection<String> getCurrentlyBlockedFlows() {
@@ -277,7 +291,6 @@ public class ConQuest implements ConQuestService {
         receivedReports.clear();
     }
 
-
     private Set<FlowRule> buildReportTriggerRules(DeviceId deviceId, int minQueueDelay, int minFlowSizeInQueue) {
         Set<FlowRule> rules = new HashSet<>();
         for (int ecnVal : new int[]{0, 1, 2, 3}) {
@@ -350,9 +363,9 @@ public class ConQuest implements ConQuestService {
 
                 Ip4Address srcIp = Ip4Address.valueOf(bb.getInt());
                 Ip4Address dstIp = Ip4Address.valueOf(bb.getInt());
-                ImmutableByteSequence srcPort = ImmutableByteSequence.copyFrom(bb.getShort());
-                ImmutableByteSequence dstPort = ImmutableByteSequence.copyFrom(bb.getShort());
-                ImmutableByteSequence protocol = ImmutableByteSequence.copyFrom(bb.get());
+                short srcPort = bb.getShort();
+                short dstPort = bb.getShort();
+                byte protocol = bb.get();
                 ImmutableByteSequence queueSize = ImmutableByteSequence.copyFrom(bb.getInt());
 
                 ConQuestReport report = new ConQuestReport(srcIp, dstIp, srcPort, dstPort, protocol, queueSize);
@@ -360,12 +373,12 @@ public class ConQuest implements ConQuestService {
                 receivedReports.add(report);
                 log.info("Received ConQuest report from {}: {}", sourceDevice, report);
                 blockFlow(sourceDevice, report);
-            } else {
+            } else if (log.isDebugEnabled()) {
                 //log.info("Received packet-in that wasn't for us. Do nothing.");
                 ByteBuffer pktBuf = context.inPacket().unparsed();
                 String strBuf = getHexString(pktBuf.array());
-                log.info("Received packet-in not for us from {}: {}", sourceDevice, strBuf);
-                log.info("EtherType was: {}", packet.getEtherType());
+                log.debug("Received packet-in not for us from {}: {}", sourceDevice, strBuf);
+                log.debug("EtherType was: {}", packet.getEtherType());
                 log.debug(strBuf);
             }
         }
@@ -374,17 +387,17 @@ public class ConQuest implements ConQuestService {
 
     private final class UnblockTimerTask implements TimerTask {
         ConQuestReport blockedFlowReport;
-        FlowRule blockingRule;
+        TrafficMatchId blockedTrafficMatchId;
 
-        UnblockTimerTask(ConQuestReport blockedFlowReport, FlowRule blockingRule) {
+        UnblockTimerTask(ConQuestReport blockedFlowReport, TrafficMatchId blockedTrafficMatchId) {
             this.blockedFlowReport = blockedFlowReport;
-            this.blockingRule = blockingRule;
+            this.blockedTrafficMatchId = blockedTrafficMatchId;
         }
 
         @Override
         public void run(Timeout timeout) {
             log.info("Unblocking {}", blockedFlowReport);
-            flowRuleService.removeFlowRules(this.blockingRule);
+            policyService.removeTrafficMatch(blockedTrafficMatchId);
             blockedFlows.remove(this.blockedFlowReport);
         }
     }

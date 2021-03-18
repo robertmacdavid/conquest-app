@@ -11,6 +11,10 @@ public class Constants {
 
     public static final int DEFAULT_BLOCK_DURATION_MS = 10000;
 
+    public static final byte PROTO_ICMP = 1;
+    public static final byte PROTO_TCP = 6;
+    public static final byte PROTO_UDP = 17;
+
     // P4 Constants
     public static final int MIRROR_SESSION_ID = 400;
 
