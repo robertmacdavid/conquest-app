@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ~ SPDX-License-Identifier: LicenseRef-ONF-Member-1.0
+ ~ SPDX-FileCopyrightText: 2020-present Open Networking Foundation <info@opennetworking.org>
+  -->
+<app name="org.princeton.conquest-app" origin="Princeton University"
+     version="${project.version}"
+     category="default" url="http://onosproject.org" title="ConQuest-App"
+     featuresRepo="mvn:${project.groupId}/${project.artifactId}/${project.version}/xml/features"
+     features="${project.artifactId}"
+     apps="org.onosproject.protocols.grpc,org.onosproject.protocols.p4runtime,org.onosproject.segmentrouting">
+    <description>${project.description}</description>
+    <artifact>mvn:${project.groupId}/${project.artifactId}/${project.version}</artifact>
+    <artifact>mvn:${trellis.api.groupId}/${trellis.api.artifactId}/${trellis.api.version}</artifact>
+</app>
