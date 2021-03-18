@@ -46,6 +46,18 @@ public class ConQuestReport {
         this.queueSize = queueSize;
     }
 
+    public int srcPortInt() {
+        return this.srcPort & 0xffff;
+    }
+
+    public int dstPortInt() {
+        return this.dstPort & 0xffff;
+    }
+
+    public int protocolInt() {
+        return this.protocol & 0xff;
+    }
+
     public String toString() {
         String protocol;
         switch (this.protocol) {
@@ -59,11 +71,12 @@ public class ConQuestReport {
                 protocol = "UDP";
                 break;
             default:
-                protocol = String.format("PROTO:0x%o", this.protocol);
+                protocol = String.format("PROTO:%d", this.protocolInt());
                 break;
         }
-        return String.format("(%s, %s:0x%o->%s:0x%o, %s)", protocol,
-                this.srcIp.toString(), this.srcPort,
-                this.dstIp.toString(), this.dstPort, this.queueSize);
+        return String.format("(%s, %s:%d->%s:%d, Size:%s)", protocol,
+                this.srcIp.toString(), this.srcPortInt(),
+                this.dstIp.toString(), this.dstPortInt(),
+                this.queueSize);
     }
 }

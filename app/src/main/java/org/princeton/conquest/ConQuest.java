@@ -36,6 +36,7 @@ import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.FlowEntry;
 import org.onosproject.net.flow.FlowRule;
 import org.onosproject.net.flow.FlowRuleService;
+import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.criteria.PiCriterion;
 import org.onosproject.net.group.Group;
 import org.onosproject.net.group.GroupDescription;
@@ -166,15 +167,14 @@ public class ConQuest implements ConQuestService {
         if (blockDuration > 0) {
             blockDurationString = String.format("for %dms", blockDuration);
         }
-        log.info("Blocking flow at device {} {} in response to report {}", deviceId, blockDurationString, report);
 
         var trafficSelectorBuilder = DefaultTrafficSelector.builder()
                 .matchIPProtocol(report.protocol)
-                .matchIPSrc(IpPrefix.valueOf(report.srcIp,32))
-                .matchIPDst(IpPrefix.valueOf(report.dstIp,32));
+                .matchIPSrc(IpPrefix.valueOf(report.srcIp, 32))
+                .matchIPDst(IpPrefix.valueOf(report.dstIp, 32));
 
-        TpPort srcPort = TpPort.tpPort(report.srcPort & 0xffff);
-        TpPort dstPort = TpPort.tpPort(report.dstPort & 0xffff);
+        TpPort srcPort = TpPort.tpPort(report.srcPortInt());
+        TpPort dstPort = TpPort.tpPort(report.dstPortInt());
 
         if (report.protocol == Constants.PROTO_TCP) {
             trafficSelectorBuilder
@@ -185,9 +185,13 @@ public class ConQuest implements ConQuestService {
                     .matchUdpSrc(srcPort)
                     .matchUdpDst(dstPort);
         }
+        TrafficSelector trafficSelector = trafficSelectorBuilder.build();
+
+        log.info("Blocking {} at device {} {} in response to report.",
+                trafficSelector, deviceId, blockDurationString);
 
         TrafficMatchId trafficMatchId = policyService.addOrUpdateTrafficMatch(
-                new TrafficMatch(trafficSelectorBuilder.build(), blockingPolicyId));
+                new TrafficMatch(trafficSelector, blockingPolicyId));
 
         blockedFlows.add(report);
         if (blockDuration < 0)
@@ -287,7 +291,6 @@ public class ConQuest implements ConQuestService {
         receivedReports.clear();
     }
 
-
     private Set<FlowRule> buildReportTriggerRules(DeviceId deviceId, int minQueueDelay, int minFlowSizeInQueue) {
         Set<FlowRule> rules = new HashSet<>();
         for (int ecnVal : new int[]{0, 1, 2, 3}) {
@@ -370,12 +373,12 @@ public class ConQuest implements ConQuestService {
                 receivedReports.add(report);
                 log.info("Received ConQuest report from {}: {}", sourceDevice, report);
                 blockFlow(sourceDevice, report);
-            } else {
+            } else if (log.isDebugEnabled()) {
                 //log.info("Received packet-in that wasn't for us. Do nothing.");
                 ByteBuffer pktBuf = context.inPacket().unparsed();
                 String strBuf = getHexString(pktBuf.array());
-                log.info("Received packet-in not for us from {}: {}", sourceDevice, strBuf);
-                log.info("EtherType was: {}", packet.getEtherType());
+                log.debug("Received packet-in not for us from {}: {}", sourceDevice, strBuf);
+                log.debug("EtherType was: {}", packet.getEtherType());
                 log.debug(strBuf);
             }
         }
