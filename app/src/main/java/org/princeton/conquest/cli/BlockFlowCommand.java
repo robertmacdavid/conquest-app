@@ -63,9 +63,6 @@ public class BlockFlowCommand extends AbstractShellCommand {
 
         Ip4Address srcAddr = Ip4Address.valueOf(ipv4Src);
         Ip4Address dstAddr = Ip4Address.valueOf(ipv4Dst);
-        ImmutableByteSequence l4Sport = ImmutableByteSequence.copyFrom(this.l4Sport);
-        ImmutableByteSequence l4Dport = ImmutableByteSequence.copyFrom(this.l4Dport);
-        ImmutableByteSequence protocol = ImmutableByteSequence.copyFrom(this.protocol);
 
         ConQuestReport report = new ConQuestReport(srcAddr, dstAddr, l4Sport, l4Dport, protocol,
                 ImmutableByteSequence.copyFrom(0));
