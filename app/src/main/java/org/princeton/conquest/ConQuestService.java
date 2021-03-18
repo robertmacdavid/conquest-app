@@ -27,6 +27,27 @@ public interface ConQuestService {
     void removeAllEntries();
 
     /**
+     * Set the duration in milliseconds for which problematic flows will be blocked.
+     * If a block duration of 0 is provided, then blocking is disabled. If -1, blocking
+     * is permanent.
+     * @param blockDuration flow block duration in milliseconds. 0 disables blocking, -1 makes it permanent
+     */
+    void setBlockDuration(int blockDuration);
+
+    /**
+     * Temporarily block a flow by injecting a conquest report into the app. Intended for testing.
+     * @param deviceId the device at which the flow should be blocked
+     * @param report the report to inject into the app
+     */
+    void blockFlow(DeviceId deviceId, ConQuestReport report);
+
+    /**
+     * Get a list of descriptions of currently blocked flow 5-tuples.
+     * @return a list of 5-tuple strings
+     */
+    Collection<String> getCurrentlyBlockedFlows();
+
+    /**
      * Install table entries in the dataplane to produce control plane reports when queues exceed a target delay and
      * some flow is occupying too much of the queue.
      *

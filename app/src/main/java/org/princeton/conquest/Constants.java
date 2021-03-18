@@ -9,8 +9,10 @@ import java.util.Set;
 public class Constants {
     public static final String APP_NAME = "org.princeton.conquest-app";
 
+    public static final int DEFAULT_BLOCK_DURATION_MS = 10000;
+
     // P4 Constants
-    public static final Set<Integer> MIRROR_SESSION_IDS = Set.of(400, 401, 402, 403);
+    public static final int MIRROR_SESSION_ID = 400;
 
     public static short CONQUEST_ETHERTYPE = (short) 0x9001;
 
@@ -29,8 +31,8 @@ public class Constants {
     // P4 Entities
     public static PiTableId REPORT_TRIGGER_TABLE = PiTableId.of("FabricEgress.conquest_egress.tb_per_flow_action");
 
-    public static PiMatchFieldId FLOW_SIZE_IN_QUEUE = PiMatchFieldId.of("flow_size_in_queue");
-    public static PiMatchFieldId QUEUE_DELAY = PiMatchFieldId.of("queue_delay");
+    public static PiMatchFieldId FLOW_SIZE_IN_QUEUE = PiMatchFieldId.of("snap_0");
+    public static PiMatchFieldId QUEUE_DELAY = PiMatchFieldId.of("q_delay");
     public static PiMatchFieldId RANDOM_BITS = PiMatchFieldId.of("random_bits");
     public static PiMatchFieldId ECN_BITS = PiMatchFieldId.of("ecn");
 
@@ -39,4 +41,15 @@ public class Constants {
     public static PiActionId MARK_ECN = PiActionId.of("FabricEgress.conquest_egress.mark_ECN");
     public static PiActionId TRIGGER_REPORT = PiActionId.of("FabricEgress.conquest_egress.trigger_report");
     public static PiActionId NOT_TRIGGER_REPORT = PiActionId.of("FabricEgress.conquest_egress.not_trigger_report");
+
+
+    // ACL P4 Entities
+    public static PiTableId ACL_TABLE = PiTableId.of("FabricIngress.acl.acl");
+    public static PiActionId ACL_DROP = PiActionId.of("FabricIngress.acl.drop");
+
+    public static PiMatchFieldId ACL_IP_SRC = PiMatchFieldId.of("ipv4_src");
+    public static PiMatchFieldId ACL_IP_DST = PiMatchFieldId.of("ipv4_dst");
+    public static PiMatchFieldId ACL_PORT_SRC = PiMatchFieldId.of("l4_sport");
+    public static PiMatchFieldId ACL_PORT_DST = PiMatchFieldId.of("l4_dport");
+    public static PiMatchFieldId ACL_IP_PROTO = PiMatchFieldId.of("ip_proto");
 }
