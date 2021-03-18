@@ -202,18 +202,15 @@ public class ConQuest implements ConQuestService {
 
 
     private void addCloneSessions(DeviceId deviceId) {
-        Set<Integer> cloneSessionIds = Constants.MIRROR_SESSION_IDS;
-        for (int cloneSessionId : cloneSessionIds) {
-            log.info("Adding clone session {} to device {}", cloneSessionId, deviceId);
-            final GroupDescription cloneGroup = ConQuestUtils.buildCloneGroup(
-                    appId,
-                    deviceId,
-                    cloneSessionId,
-                    // Ports where to clone the packet.
-                    // Just controller in this case.
-                    Collections.singleton(PortNumber.CONTROLLER));
-            groupService.addGroup(cloneGroup);
-        }
+        log.info("Adding clone session {} to device {}", Constants.MIRROR_SESSION_ID, deviceId);
+        final GroupDescription cloneGroup = ConQuestUtils.buildCloneGroup(
+                appId,
+                deviceId,
+                Constants.MIRROR_SESSION_ID,
+                // Ports where to clone the packet.
+                // Just controller in this case.
+                Collections.singleton(PortNumber.CONTROLLER));
+        groupService.addGroup(cloneGroup);
     }
 
 

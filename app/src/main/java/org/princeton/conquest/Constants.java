@@ -12,7 +12,7 @@ public class Constants {
     public static final int DEFAULT_BLOCK_DURATION_MS = 10000;
 
     // P4 Constants
-    public static final Set<Integer> MIRROR_SESSION_IDS = Set.of(400, 401, 402, 403);
+    public static final int MIRROR_SESSION_ID = 400;
 
     public static short CONQUEST_ETHERTYPE = (short) 0x9001;
 
