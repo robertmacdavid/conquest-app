@@ -17,10 +17,42 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <repositories>
+        <repository>
+            <id>central</id>
+            <name>Central Repository</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <layout>default</layout>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+                <checksumPolicy>fail</checksumPolicy>
+            </releases>
+        </repository>
+        <repository>
+            <id>snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+                <checksumPolicy>fail</checksumPolicy>
+            </snapshots>
+        </repository>
+    </repositories>
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <parent>
         <groupId>org.onosproject</groupId>
         <artifactId>onos-dependencies</artifactId>
-        <version>2.2.3</version>
+        <version>2.5.1</version>
     </parent>
 
     <groupId>org.princeton</groupId>
@@ -38,6 +70,9 @@
         <onos.app.category>default</onos.app.category>
         <onos.app.url>http://cs.princeton.edu/</onos.app.url>
         <onos.app.readme>ONOS OSGi bundle archetype.</onos.app.readme>
+        <trellis.api.groupId>org.onosproject</trellis.api.groupId>
+        <trellis.api.artifactId>segmentrouting-api</trellis.api.artifactId>
+        <trellis.api.version>3.0.1-SNAPSHOT</trellis.api.version>
     </properties>
 
     <dependencies>
@@ -45,6 +80,13 @@
             <groupId>org.onosproject</groupId>
             <artifactId>onos-api</artifactId>
             <version>${onos.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${trellis.api.groupId}</groupId>
+            <artifactId>${trellis.api.artifactId}</artifactId>
+            <version>${trellis.api.version}</version>
             <scope>provided</scope>
         </dependency>
 
