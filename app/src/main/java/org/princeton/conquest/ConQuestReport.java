@@ -63,7 +63,7 @@ public class ConQuestReport {
                 protocol = "UDP";
                 break;
             default:
-                protocol = "UNKNOWN";
+                protocol = String.format("PROTO:0x%o", this.protocol.asReadOnlyBuffer().get(0));
                 break;
         }
         return String.format("(%s, %s:%s->%s:%s, %s)", protocol,

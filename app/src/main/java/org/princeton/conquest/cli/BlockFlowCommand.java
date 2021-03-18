@@ -8,6 +8,9 @@ import org.onlab.packet.Ip4Address;
 import org.onlab.util.ImmutableByteSequence;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.cli.net.DeviceIdCompleter;
+import org.onosproject.net.Device;
+import org.onosproject.net.DeviceId;
+import org.onosproject.net.device.DeviceService;
 import org.princeton.conquest.ConQuestReport;
 import org.princeton.conquest.ConQuestService;
 
@@ -51,6 +54,13 @@ public class BlockFlowCommand extends AbstractShellCommand {
     protected void doExecute() {
         ConQuestService app = get(ConQuestService.class);
 
+        DeviceService deviceService = get(DeviceService.class);
+        Device device = deviceService.getDevice(DeviceId.deviceId(uri));
+        if (device == null) {
+            print("Device \"%s\" is not found", uri);
+            return;
+        }
+
         Ip4Address srcAddr = Ip4Address.valueOf(ipv4Src);
         Ip4Address dstAddr = Ip4Address.valueOf(ipv4Dst);
         ImmutableByteSequence l4Sport = ImmutableByteSequence.copyFrom(this.l4Sport);
@@ -59,8 +69,8 @@ public class BlockFlowCommand extends AbstractShellCommand {
 
         ConQuestReport report = new ConQuestReport(srcAddr, dstAddr, l4Sport, l4Dport, protocol,
                 ImmutableByteSequence.copyFrom(0));
-        for (String s : app.getCurrentlyBlockedFlows()) {
-            print(s);
-        }
+
+        print("Blocking flow for report %s", report.toString());
+        app.blockFlow(device.id(), report);
     }
 }

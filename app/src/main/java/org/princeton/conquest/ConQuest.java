@@ -142,9 +142,15 @@ public class ConQuest implements ConQuestService {
 
     @Override
     public void blockFlow(DeviceId deviceId, ConQuestReport report) {
-        if (blockDuration == 0)
+        if (blockDuration == 0) {
+            log.info("Blocking duration is set to 0, not blocking flow");
             return;
-        log.info("Blocking flow at device {} in response to report {}", deviceId, report);
+        }
+        String blockDurationString = "~forever~";
+        if (blockDuration > 0) {
+            blockDurationString = String.format("for %dms", blockDuration);
+        }
+        log.info("Blocking flow at device {} {} in response to report {}", deviceId, blockDurationString, report);
         FlowRule rule = buildBlockRuleFor(deviceId, report);
         flowRuleService.applyFlowRules(rule);
         blockedFlows.add(report);
@@ -154,9 +160,11 @@ public class ConQuest implements ConQuestService {
     }
 
     private FlowRule buildBlockRuleFor(DeviceId deviceId, ConQuestReport report) {
-        ImmutableByteSequence allOnes32 = ImmutableByteSequence.ofOnes(32);
-        ImmutableByteSequence allOnes16 = ImmutableByteSequence.ofOnes(16);
-        ImmutableByteSequence allOnes8 = ImmutableByteSequence.ofOnes(8);
+        ImmutableByteSequence allOnes32 = ImmutableByteSequence.ofOnes(4);
+        ImmutableByteSequence allOnes16 = ImmutableByteSequence.ofOnes(2);
+        ImmutableByteSequence allOnes8 = ImmutableByteSequence.ofOnes(1);
+
+        // TODO: only add ports to match if protocol is TCP or UDP
         PiCriterion match = PiCriterion.builder()
                 .matchTernary(Constants.ACL_IP_SRC, report.srcIp.toOctets(), allOnes32.asArray())
                 .matchTernary(Constants.ACL_IP_DST, report.dstIp.toOctets(), allOnes32.asArray())
