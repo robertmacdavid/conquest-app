@@ -18,33 +18,28 @@ import org.princeton.conquest.ConQuestService;
 @Command(scope = "conquest", name = "block-flow",
         description = "Test the ConQuest's ability to block a flow.")
 public class BlockFlowCommand extends AbstractShellCommand {
-    @Argument(index = 0, name = "uri",
-            description = "Device ID at which to block the flow",
-            required = true, multiValued = false)
-    @Completion(DeviceIdCompleter.class)
-    String uri = null;
 
-    @Argument(index = 1, name = "ipv4-src",
+    @Argument(index = 0, name = "ipv4-src",
             description = "Source IP of the flow to block",
             required = true)
     String ipv4Src = null;
 
-    @Argument(index = 2, name = "ipv4-dst",
+    @Argument(index = 1, name = "ipv4-dst",
             description = "Destination IP of the flow to block",
             required = true)
     String ipv4Dst = null;
 
-    @Argument(index = 3, name = "l4-sport",
+    @Argument(index = 2, name = "l4-sport",
             description = "L4 source port of the flow to block",
             required = true)
     short l4Sport = 0;
 
-    @Argument(index = 4, name = "l4-dport",
+    @Argument(index = 3, name = "l4-dport",
             description = "L4 dest port of the flow to block",
             required = true)
     short l4Dport = 0;
 
-    @Argument(index = 5, name = "protocol",
+    @Argument(index = 4, name = "protocol",
             description = "IP protocol of the flow to block",
             required = true)
     byte protocol = 0;
@@ -54,13 +49,6 @@ public class BlockFlowCommand extends AbstractShellCommand {
     protected void doExecute() {
         ConQuestService app = get(ConQuestService.class);
 
-        DeviceService deviceService = get(DeviceService.class);
-        Device device = deviceService.getDevice(DeviceId.deviceId(uri));
-        if (device == null) {
-            print("Device \"%s\" is not found", uri);
-            return;
-        }
-
         Ip4Address srcAddr = Ip4Address.valueOf(ipv4Src);
         Ip4Address dstAddr = Ip4Address.valueOf(ipv4Dst);
 
@@ -68,6 +56,6 @@ public class BlockFlowCommand extends AbstractShellCommand {
                 ImmutableByteSequence.copyFrom(0));
 
         print("Blocking flow for report %s", report.toString());
-        app.blockFlow(device.id(), report);
+        app.blockFlow(report);
     }
 }
