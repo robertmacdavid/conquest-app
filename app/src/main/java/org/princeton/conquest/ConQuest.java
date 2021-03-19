@@ -44,7 +44,9 @@ import org.onosproject.net.group.GroupService;
 import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
+import org.onosproject.net.pi.model.PiPipeconf;
 import org.onosproject.net.pi.runtime.PiAction;
+import org.onosproject.net.pi.service.PiPipeconfService;
 import org.onosproject.segmentrouting.policy.api.DropPolicy;
 import org.onosproject.segmentrouting.policy.api.PolicyId;
 import org.onosproject.segmentrouting.policy.api.PolicyService;
@@ -63,7 +65,9 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -100,12 +104,17 @@ public class ConQuest implements ConQuestService {
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected PacketService packetService;
 
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
+    protected PiPipeconfService pipeconfService;
+
     private final Set<ConQuestReport> receivedReports = new HashSet<>();
     private final Timer unblockingTimer = new HashedWheelTimer();
     private final CustomPacketProcessor processor = new CustomPacketProcessor();
     private final Set<ConQuestReport> blockedFlows = new HashSet<>();
 
     private PolicyId blockingPolicyId;
+
+    private final Map<DeviceId, Boolean> cachedConquestDeviceLookups = new HashMap<>();
 
 
     private String getHexString(byte[] byteBuffer) {
@@ -157,8 +166,28 @@ public class ConQuest implements ConQuestService {
         log.info("Reconfigured");
     }
 
+    private boolean isConquestDevice(DeviceId deviceId) {
+        Boolean answer = cachedConquestDeviceLookups.getOrDefault(deviceId, null);
+        if (answer != null) return answer;
+
+        var optPipeconf = pipeconfService.getPipeconf(deviceId);
+        if (optPipeconf.isEmpty()) {
+            answer = false;
+        } else {
+            PiPipeconf pipeconf = optPipeconf.get();
+            answer = pipeconf.id().id().contains("conquest");
+        }
+        cachedConquestDeviceLookups.put(deviceId, answer);
+        return answer;
+    }
+
     @Override
-    public void blockFlow(DeviceId deviceId, ConQuestReport report) {
+    public void blockFlow(ConQuestReport report) {
+        if (report.protocol != Constants.PROTO_UDP && report.protocol != Constants.PROTO_TCP) {
+            log.info("Not blocking non-TCP/UDP flow that has IP protocol {}", report.protocolInt());
+            return;
+        }
+
         if (blockDuration == 0) {
             log.info("Blocking duration is set to 0, not blocking flow");
             return;
@@ -187,8 +216,8 @@ public class ConQuest implements ConQuestService {
         }
         TrafficSelector trafficSelector = trafficSelectorBuilder.build();
 
-        log.info("Blocking {} at device {} {} in response to report.",
-                trafficSelector, deviceId, blockDurationString);
+        log.info("Blocking {} {} in response to report.",
+                trafficSelector, blockDurationString);
 
         TrafficMatchId trafficMatchId = policyService.addOrUpdateTrafficMatch(
                 new TrafficMatch(trafficSelector, blockingPolicyId));
@@ -238,7 +267,9 @@ public class ConQuest implements ConQuestService {
 
     private void addAllCloneSessions() {
         for (Device device : deviceService.getAvailableDevices()) {
-            addCloneSessions(device.id());
+            if (isConquestDevice(device.id())) {
+                addCloneSessions(device.id());
+            }
         }
         log.info("Added all clone sessions.");
     }
@@ -251,7 +282,9 @@ public class ConQuest implements ConQuestService {
 
     private void removeAllCloneSessions() {
         for (Device device : deviceService.getAvailableDevices()) {
-            removeCloneSessions(device.id());
+            if (isConquestDevice(device.id())) {
+                removeCloneSessions(device.id());
+            }
         }
     }
 
@@ -334,7 +367,9 @@ public class ConQuest implements ConQuestService {
     @Override
     public void addReportTriggerEverywhere(int minQueueDelay, int minFlowSizeInQueue) {
         for (Device device : deviceService.getAvailableDevices()) {
-            addReportTrigger(device.id(), minQueueDelay, minFlowSizeInQueue);
+            if (isConquestDevice(device.id())) {
+                addReportTrigger(device.id(), minQueueDelay, minFlowSizeInQueue);
+            }
         }
     }
 
@@ -372,7 +407,7 @@ public class ConQuest implements ConQuestService {
 
                 receivedReports.add(report);
                 log.info("Received ConQuest report from {}: {}", sourceDevice, report);
-                blockFlow(sourceDevice, report);
+                blockFlow(report);
             } else if (log.isDebugEnabled()) {
                 //log.info("Received packet-in that wasn't for us. Do nothing.");
                 ByteBuffer pktBuf = context.inPacket().unparsed();
