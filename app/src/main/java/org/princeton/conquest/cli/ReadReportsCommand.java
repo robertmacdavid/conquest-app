@@ -7,7 +7,12 @@ import org.onosproject.cli.AbstractShellCommand;
 import org.princeton.conquest.ConQuestReport;
 import org.princeton.conquest.ConQuestService;
 
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -41,8 +46,29 @@ public class ReadReportsCommand extends AbstractShellCommand {
     }
 
     private static class PortPair {
+        int src;
+        int dst;
+        String proto;
+
+        PortPair(int src, int dst, String proto) {
+            this.src = src;
+            this.dst = dst;
+            this.proto = proto;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            PortPair portPair = (PortPair) o;
+            return src == portPair.src && dst == portPair.dst && proto.equals(portPair.proto);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(src, dst, proto);
+        }
     }
-}
 
 
     @Override
@@ -51,15 +77,46 @@ public class ReadReportsCommand extends AbstractShellCommand {
 
         Collection<ConQuestReport> reports = app.getReceivedReports();
 
-        Map<Pair<>>
+        Map<IpPair, Map<PortPair, List<ConQuestReport>>> groupedReports = new HashMap<>();
 
         for (ConQuestReport report : reports) {
-
-        int count = 0;
-        for (ConQuestReport report : app.getReceivedReports()) {
-            count += 1;
-            print("%d) %s", count, report.toString());
+            IpPair ipPair = new IpPair(report.srcAddr(), report.dstAddr());
+            PortPair portPair = new PortPair(report.srcPortInt(), report.dstPortInt(), report.protocolString());
+            var portPairMap = groupedReports.compute(ipPair, (key, val) -> {
+                if (val == null) {
+                    val = new HashMap<>();
+                }
+                return val;
+            });
+            portPairMap.compute(portPair, (key, val) -> {
+                if (val == null) {
+                    val = new ArrayList<>();
+                }
+                val.add(report);
+                return val;
+            });
         }
-        print("%d reports found", count);
+
+        int numFlows = 0;
+        for (var outerEntry : groupedReports.entrySet()) {
+            IpPair ipPair = outerEntry.getKey();
+            print("SrcIp %s, DstIp %s", ipPair.src.toString(), ipPair.dst.toString());
+            var portPairMap = outerEntry.getValue();
+            numFlows += portPairMap.size();
+            for (var innerEntry : portPairMap.entrySet()) {
+                PortPair portPair = innerEntry.getKey();
+                List<ConQuestReport> reportGroup = innerEntry.getValue();
+                // reportGroup.sort((report1, report2) -> report1.getReportTime().compareTo(report2.getReportTime()));
+                LocalTime latestReceivedTime = LocalTime.MIN;
+                for (ConQuestReport report : reportGroup) {
+                    if (report.getReportTime().isAfter(latestReceivedTime)) {
+                        latestReceivedTime = report.getReportTime();
+                    }
+                }
+                print("--Proto %s, SrcPort %d, DstPort %d", portPair.proto, portPair.src, portPair.dst);
+                print("----%d reports, latest one at %s", reportGroup.size(), latestReceivedTime.toString());
+            }
+        }
+        print("%d total reports received from %d flows", reports.size(), numFlows);
     }
 }

@@ -2,7 +2,7 @@ package org.princeton.conquest;
 
 import org.onlab.packet.Ip4Address;
 import org.onlab.util.ImmutableByteSequence;
-import static com.google.common.base.Preconditions.checkArgument;
+
 import java.time.LocalTime;
 
 public class ConQuestReport {
@@ -51,6 +51,14 @@ public class ConQuestReport {
         this.reportTime = reportTime;
     }
 
+    public Ip4Address srcAddr() {
+        return this.srcIp;
+    }
+
+    public Ip4Address dstAddr() {
+        return this.dstIp;
+    }
+
     public int srcPortInt() {
         return this.srcPort & 0xffff;
     }
@@ -63,7 +71,11 @@ public class ConQuestReport {
         return this.protocol & 0xff;
     }
 
-    public String toString() {
+    public LocalTime getReportTime() {
+        return reportTime;
+    }
+
+    public String protocolString() {
         String protocol;
         switch (this.protocol) {
             case Constants.PROTO_ICMP:
@@ -79,6 +91,11 @@ public class ConQuestReport {
                 protocol = String.format("PROTO:%d", this.protocolInt());
                 break;
         }
+        return protocol;
+    }
+
+    public String toString() {
+        String protocol = protocolString();
         return String.format("(%s, %s:%d->%s:%d, Size:%s, Received:%s)", protocol,
                 this.srcIp.toString(), this.srcPortInt(),
                 this.dstIp.toString(), this.dstPortInt(),
