@@ -100,21 +100,25 @@ public class ReadReportsCommand extends AbstractShellCommand {
         int numFlows = 0;
         for (var outerEntry : groupedReports.entrySet()) {
             IpPair ipPair = outerEntry.getKey();
-            print("SrcIp %s, DstIp %s", ipPair.src.toString(), ipPair.dst.toString());
             var portPairMap = outerEntry.getValue();
+            print("SrcIp %s, DstIp %s, %d Distinct 5-tuples",
+                    ipPair.src.toString(), ipPair.dst.toString(), portPairMap.size());
             numFlows += portPairMap.size();
             for (var innerEntry : portPairMap.entrySet()) {
                 PortPair portPair = innerEntry.getKey();
                 List<ConQuestReport> reportGroup = innerEntry.getValue();
-                // reportGroup.sort((report1, report2) -> report1.getReportTime().compareTo(report2.getReportTime()));
+                reportGroup.sort((report1, report2) -> report1.getReportTime().compareTo(report2.getReportTime()));
                 LocalTime latestReceivedTime = LocalTime.MIN;
                 for (ConQuestReport report : reportGroup) {
                     if (report.getReportTime().isAfter(latestReceivedTime)) {
                         latestReceivedTime = report.getReportTime();
                     }
                 }
-                print("--Proto %s, SrcPort %d, DstPort %d", portPair.proto, portPair.src, portPair.dst);
-                print("----%d reports, latest one at %s", reportGroup.size(), latestReceivedTime.toString());
+                print("--Proto %s, SrcPort %d, DstPort %d, %d reports",
+                        portPair.proto, portPair.src, portPair.dst, reportGroup.size());
+                for (ConQuestReport report : reportGroup) {
+                    print("----%s queue size at time %s", report.queueSizeString(), report.getReportTime().toString());
+                }
             }
         }
         print("%d total reports received from %d flows", reports.size(), numFlows);

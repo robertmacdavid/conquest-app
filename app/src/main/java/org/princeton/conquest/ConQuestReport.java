@@ -3,6 +3,7 @@ package org.princeton.conquest;
 import org.onlab.packet.Ip4Address;
 import org.onlab.util.ImmutableByteSequence;
 
+import java.text.DecimalFormat;
 import java.time.LocalTime;
 
 public class ConQuestReport {
@@ -75,6 +76,27 @@ public class ConQuestReport {
         return reportTime;
     }
 
+    public String queueSizeString() {
+        long size = queueSize.asReadOnlyBuffer().getLong();
+
+        String hrSize = null;
+
+        double b = size;
+        double k = size / 1024.0;
+        double m = size / (1024.0 * 1024.0);
+
+        DecimalFormat dec = new DecimalFormat("0.00");
+
+        if (m > 1) {
+            hrSize = dec.format(m).concat(" MB");
+        } else if (k > 1) {
+            hrSize = dec.format(k).concat(" KB");
+        } else {
+            hrSize = dec.format(b).concat(" Bytes");
+        }
+        return hrSize;
+    }
+
     public String protocolString() {
         String protocol;
         switch (this.protocol) {
@@ -95,10 +117,9 @@ public class ConQuestReport {
     }
 
     public String toString() {
-        String protocol = protocolString();
-        return String.format("(%s, %s:%d->%s:%d, Size:%s, Received:%s)", protocol,
+        return String.format("(%s, %s:%d->%s:%d, Size:%s, Received:%s)", protocolString(),
                 this.srcIp.toString(), this.srcPortInt(),
                 this.dstIp.toString(), this.dstPortInt(),
-                this.queueSize, this.reportTime.toString());
+                this.queueSizeString(), this.reportTime.toString());
     }
 }
