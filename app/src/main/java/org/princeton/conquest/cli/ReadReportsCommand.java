@@ -41,7 +41,6 @@ public class ReadReportsCommand extends AbstractShellCommand {
     }
 
     private static class PortPair {
-        
     }
 }
 
