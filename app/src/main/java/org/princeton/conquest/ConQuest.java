@@ -21,6 +21,7 @@ import org.jboss.netty.util.Timer;
 import org.jboss.netty.util.TimerTask;
 import org.onlab.packet.Ethernet;
 import org.onlab.packet.Ip4Address;
+import org.onlab.packet.Ip4Prefix;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.TpPort;
 import org.onlab.util.ImmutableByteSequence;
@@ -114,6 +115,7 @@ public class ConQuest implements ConQuestService {
     private final Timer unblockingTimer = new HashedWheelTimer();
     private final CustomPacketProcessor processor = new CustomPacketProcessor();
     private final Set<ConQuestReport> blockedFlows = new HashSet<>();
+    private final Set<Ip4Prefix> whitelist = new HashSet<>();
 
     private PolicyId blockingPolicyId;
 
@@ -195,6 +197,17 @@ public class ConQuest implements ConQuestService {
             log.info("Blocking duration is set to 0, not blocking flow");
             return;
         }
+
+        for (Ip4Prefix prefix : whitelist) {
+            if (prefix.contains(report.srcAddr())) {
+                log.info("Source address in report matches whitelisted prefix {}. Not blocking", prefix);
+                return;
+            } else if (prefix.contains(report.dstAddr())) {
+                log.info("Destination address in report matches whitelisted prefix {}. Not blocking", prefix);
+                return;
+            }
+        }
+
         String blockDurationString = "~forever~";
         if (blockDuration > 0) {
             blockDurationString = String.format("for %dms", blockDuration);
@@ -243,6 +256,21 @@ public class ConQuest implements ConQuestService {
         return blockedFlows.stream()
                 .map(ConQuestReport::toString)
                 .collect(Collectors.toCollection(HashSet::new));
+    }
+
+    @Override
+    public void whitelistPrefix(Ip4Prefix prefix) {
+        whitelist.add(prefix);
+    }
+
+    @Override
+    public void clearWhitelist() {
+        whitelist.clear();
+    }
+
+    @Override
+    public Collection<Ip4Prefix> readWhitelist() {
+        return List.copyOf(whitelist);
     }
 
     private void cleanUp() {

@@ -15,6 +15,7 @@
  */
 package org.princeton.conquest;
 
+import org.onlab.packet.Ip4Prefix;
 import org.onosproject.net.DeviceId;
 
 import java.util.Collection;
@@ -91,4 +92,23 @@ public interface ConQuestService {
      * Clear the ConQuest reports received by the app.
      */
     void clearReceivedReports();
+
+    /**
+     * Whitelist an IPv4 prefix from ConQuest enforcement.
+     *
+     * @param prefix the prefix to whitelist
+     */
+    void whitelistPrefix(Ip4Prefix prefix);
+
+    /**
+     * Clear the whitelist of IPv4 prefixes exempt from ConQuest enforcement.
+     */
+    void clearWhitelist();
+
+    /**
+     * Read the current list of IPv4 prefixes whitelisted from ConQuest enforcement.
+     *
+     * @return the current whitelist
+     */
+    Collection<Ip4Prefix> readWhitelist();
 }
