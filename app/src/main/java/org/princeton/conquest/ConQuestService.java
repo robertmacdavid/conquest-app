@@ -18,6 +18,7 @@ package org.princeton.conquest;
 import org.onosproject.net.DeviceId;
 
 import java.util.Collection;
+import java.util.List;
 
 public interface ConQuestService {
 
@@ -84,7 +85,7 @@ public interface ConQuestService {
      *
      * @return A collection of received ConQuest reports.
      */
-    Collection<ConQuestReport> getReceivedReports();
+    List<ConQuestReport> getReceivedReports();
 
     /**
      * Clear the ConQuest reports received by the app.

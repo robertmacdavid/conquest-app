@@ -64,10 +64,12 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalTime;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -108,7 +110,7 @@ public class ConQuest implements ConQuestService {
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected PiPipeconfService pipeconfService;
 
-    private final Set<ConQuestReport> receivedReports = new HashSet<>();
+    private final List<ConQuestReport> receivedReports = new ArrayList<>();
     private final Timer unblockingTimer = new HashedWheelTimer();
     private final CustomPacketProcessor processor = new CustomPacketProcessor();
     private final Set<ConQuestReport> blockedFlows = new HashSet<>();
@@ -316,8 +318,8 @@ public class ConQuest implements ConQuestService {
     }
 
     @Override
-    public Collection<ConQuestReport> getReceivedReports() {
-        return Set.copyOf(receivedReports);
+    public List<ConQuestReport> getReceivedReports() {
+        return List.copyOf(receivedReports);
     }
 
     @Override
