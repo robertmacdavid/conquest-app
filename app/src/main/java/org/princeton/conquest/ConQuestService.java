@@ -30,18 +30,21 @@ public interface ConQuestService {
      * Set the duration in milliseconds for which problematic flows will be blocked.
      * If a block duration of 0 is provided, then blocking is disabled. If -1, blocking
      * is permanent.
+     *
      * @param blockDuration flow block duration in milliseconds. 0 disables blocking, -1 makes it permanent
      */
     void setBlockDuration(int blockDuration);
 
     /**
      * Temporarily block a flow by injecting a conquest report into the app. Visible for testing.
+     *
      * @param report the report to inject into the app
      */
     void blockFlow(ConQuestReport report);
 
     /**
      * Get a list of descriptions of currently blocked flow 5-tuples.
+     *
      * @return a list of 5-tuple strings
      */
     Collection<String> getCurrentlyBlockedFlows();

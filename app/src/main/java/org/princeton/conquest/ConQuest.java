@@ -61,6 +61,7 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.time.LocalTime;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -403,7 +404,10 @@ public class ConQuest implements ConQuestService {
                 byte protocol = bb.get();
                 ImmutableByteSequence queueSize = ImmutableByteSequence.copyFrom(bb.getInt());
 
-                ConQuestReport report = new ConQuestReport(srcIp, dstIp, srcPort, dstPort, protocol, queueSize);
+                LocalTime timeReceived = LocalTime.now();
+
+                ConQuestReport report = new ConQuestReport(srcIp, dstIp, srcPort, dstPort, protocol, queueSize,
+                        LocalTime.now());
 
                 receivedReports.add(report);
                 log.info("Received ConQuest report from {}: {}", sourceDevice, report);

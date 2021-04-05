@@ -3,6 +3,7 @@ package org.princeton.conquest;
 import org.onlab.packet.Ip4Address;
 import org.onlab.util.ImmutableByteSequence;
 import static com.google.common.base.Preconditions.checkArgument;
+import java.time.LocalTime;
 
 public class ConQuestReport {
 
@@ -12,6 +13,7 @@ public class ConQuestReport {
     short dstPort;
     byte protocol;
     ImmutableByteSequence queueSize;
+    LocalTime reportTime;
 
     /**
      * Constructs ConQuest Report data
@@ -34,16 +36,19 @@ public class ConQuestReport {
      * @param dstPort      destination L4 port of the reported flow
      * @param protocol     L4 protocol of the reported flow
      * @param queueSize    queue occupancy of the reported flow
+     * @param reportTime   time at which the report was received
      */
     public ConQuestReport(Ip4Address srcIpAddress, Ip4Address dstIpAddress,
                           short srcPort, short dstPort,
-                          byte protocol, ImmutableByteSequence queueSize) {
+                          byte protocol, ImmutableByteSequence queueSize,
+                          LocalTime reportTime) {
         this.srcIp = srcIpAddress;
         this.dstIp = dstIpAddress;
         this.srcPort = srcPort;
         this.dstPort = dstPort;
         this.protocol = protocol;
         this.queueSize = queueSize;
+        this.reportTime = reportTime;
     }
 
     public int srcPortInt() {
@@ -74,9 +79,9 @@ public class ConQuestReport {
                 protocol = String.format("PROTO:%d", this.protocolInt());
                 break;
         }
-        return String.format("(%s, %s:%d->%s:%d, Size:%s)", protocol,
+        return String.format("(%s, %s:%d->%s:%d, Size:%s, Received:%s)", protocol,
                 this.srcIp.toString(), this.srcPortInt(),
                 this.dstIp.toString(), this.dstPortInt(),
-                this.queueSize);
+                this.queueSize, this.reportTime.toString());
     }
 }
