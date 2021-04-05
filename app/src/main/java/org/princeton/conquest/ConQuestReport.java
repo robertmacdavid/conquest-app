@@ -2,7 +2,9 @@ package org.princeton.conquest;
 
 import org.onlab.packet.Ip4Address;
 import org.onlab.util.ImmutableByteSequence;
-import static com.google.common.base.Preconditions.checkArgument;
+
+import java.text.DecimalFormat;
+import java.time.LocalTime;
 
 public class ConQuestReport {
 
@@ -12,6 +14,7 @@ public class ConQuestReport {
     short dstPort;
     byte protocol;
     ImmutableByteSequence queueSize;
+    LocalTime reportTime;
 
     /**
      * Constructs ConQuest Report data
@@ -34,16 +37,27 @@ public class ConQuestReport {
      * @param dstPort      destination L4 port of the reported flow
      * @param protocol     L4 protocol of the reported flow
      * @param queueSize    queue occupancy of the reported flow
+     * @param reportTime   time at which the report was received
      */
     public ConQuestReport(Ip4Address srcIpAddress, Ip4Address dstIpAddress,
                           short srcPort, short dstPort,
-                          byte protocol, ImmutableByteSequence queueSize) {
+                          byte protocol, ImmutableByteSequence queueSize,
+                          LocalTime reportTime) {
         this.srcIp = srcIpAddress;
         this.dstIp = dstIpAddress;
         this.srcPort = srcPort;
         this.dstPort = dstPort;
         this.protocol = protocol;
         this.queueSize = queueSize;
+        this.reportTime = reportTime;
+    }
+
+    public Ip4Address srcAddr() {
+        return this.srcIp;
+    }
+
+    public Ip4Address dstAddr() {
+        return this.dstIp;
     }
 
     public int srcPortInt() {
@@ -58,7 +72,32 @@ public class ConQuestReport {
         return this.protocol & 0xff;
     }
 
-    public String toString() {
+    public LocalTime getReportTime() {
+        return reportTime;
+    }
+
+    public String queueSizeString() {
+        long size = queueSize.asReadOnlyBuffer().getLong();
+
+        String hrSize = null;
+
+        double b = size;
+        double k = size / 1024.0;
+        double m = size / (1024.0 * 1024.0);
+
+        DecimalFormat dec = new DecimalFormat("0.00");
+
+        if (m > 1) {
+            hrSize = dec.format(m).concat(" MB");
+        } else if (k > 1) {
+            hrSize = dec.format(k).concat(" KB");
+        } else {
+            hrSize = dec.format(b).concat(" Bytes");
+        }
+        return hrSize;
+    }
+
+    public String protocolString() {
         String protocol;
         switch (this.protocol) {
             case Constants.PROTO_ICMP:
@@ -74,9 +113,13 @@ public class ConQuestReport {
                 protocol = String.format("PROTO:%d", this.protocolInt());
                 break;
         }
-        return String.format("(%s, %s:%d->%s:%d, Size:%s)", protocol,
+        return protocol;
+    }
+
+    public String toString() {
+        return String.format("(%s, %s:%d->%s:%d, Size:%s, Received:%s)", protocolString(),
                 this.srcIp.toString(), this.srcPortInt(),
                 this.dstIp.toString(), this.dstPortInt(),
-                this.queueSize);
+                this.queueSizeString(), this.reportTime.toString());
     }
 }

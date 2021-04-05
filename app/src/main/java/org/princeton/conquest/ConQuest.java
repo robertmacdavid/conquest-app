@@ -21,6 +21,7 @@ import org.jboss.netty.util.Timer;
 import org.jboss.netty.util.TimerTask;
 import org.onlab.packet.Ethernet;
 import org.onlab.packet.Ip4Address;
+import org.onlab.packet.Ip4Prefix;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.TpPort;
 import org.onlab.util.ImmutableByteSequence;
@@ -61,12 +62,15 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.time.LocalTime;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -107,10 +111,11 @@ public class ConQuest implements ConQuestService {
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected PiPipeconfService pipeconfService;
 
-    private final Set<ConQuestReport> receivedReports = new HashSet<>();
+    private final List<ConQuestReport> receivedReports = new ArrayList<>();
     private final Timer unblockingTimer = new HashedWheelTimer();
     private final CustomPacketProcessor processor = new CustomPacketProcessor();
     private final Set<ConQuestReport> blockedFlows = new HashSet<>();
+    private final Set<Ip4Prefix> whitelist = new HashSet<>();
 
     private PolicyId blockingPolicyId;
 
@@ -192,6 +197,17 @@ public class ConQuest implements ConQuestService {
             log.info("Blocking duration is set to 0, not blocking flow");
             return;
         }
+
+        for (Ip4Prefix prefix : whitelist) {
+            if (prefix.contains(report.srcAddr())) {
+                log.info("Source address in report matches whitelisted prefix {}. Not blocking", prefix);
+                return;
+            } else if (prefix.contains(report.dstAddr())) {
+                log.info("Destination address in report matches whitelisted prefix {}. Not blocking", prefix);
+                return;
+            }
+        }
+
         String blockDurationString = "~forever~";
         if (blockDuration > 0) {
             blockDurationString = String.format("for %dms", blockDuration);
@@ -240,6 +256,21 @@ public class ConQuest implements ConQuestService {
         return blockedFlows.stream()
                 .map(ConQuestReport::toString)
                 .collect(Collectors.toCollection(HashSet::new));
+    }
+
+    @Override
+    public void whitelistPrefix(Ip4Prefix prefix) {
+        whitelist.add(prefix);
+    }
+
+    @Override
+    public void clearWhitelist() {
+        whitelist.clear();
+    }
+
+    @Override
+    public Collection<Ip4Prefix> readWhitelist() {
+        return List.copyOf(whitelist);
     }
 
     private void cleanUp() {
@@ -315,8 +346,8 @@ public class ConQuest implements ConQuestService {
     }
 
     @Override
-    public Collection<ConQuestReport> getReceivedReports() {
-        return Set.copyOf(receivedReports);
+    public List<ConQuestReport> getReceivedReports() {
+        return List.copyOf(receivedReports);
     }
 
     @Override
@@ -403,7 +434,10 @@ public class ConQuest implements ConQuestService {
                 byte protocol = bb.get();
                 ImmutableByteSequence queueSize = ImmutableByteSequence.copyFrom(bb.getInt());
 
-                ConQuestReport report = new ConQuestReport(srcIp, dstIp, srcPort, dstPort, protocol, queueSize);
+                LocalTime timeReceived = LocalTime.now();
+
+                ConQuestReport report = new ConQuestReport(srcIp, dstIp, srcPort, dstPort, protocol, queueSize,
+                        LocalTime.now());
 
                 receivedReports.add(report);
                 log.info("Received ConQuest report from {}: {}", sourceDevice, report);

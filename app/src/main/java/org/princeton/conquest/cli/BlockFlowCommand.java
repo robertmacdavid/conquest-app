@@ -14,6 +14,8 @@ import org.onosproject.net.device.DeviceService;
 import org.princeton.conquest.ConQuestReport;
 import org.princeton.conquest.ConQuestService;
 
+import java.time.LocalTime;
+
 @Service
 @Command(scope = "conquest", name = "block-flow",
         description = "Test the ConQuest's ability to block a flow.")
@@ -53,7 +55,7 @@ public class BlockFlowCommand extends AbstractShellCommand {
         Ip4Address dstAddr = Ip4Address.valueOf(ipv4Dst);
 
         ConQuestReport report = new ConQuestReport(srcAddr, dstAddr, l4Sport, l4Dport, protocol,
-                ImmutableByteSequence.copyFrom(0));
+                ImmutableByteSequence.copyFrom(0), LocalTime.now());
 
         print("Blocking flow for report %s", report.toString());
         app.blockFlow(report);
