@@ -86,7 +86,7 @@ public class ConQuestReport {
         }
 
         String hrSize = null;
-
+    
         double b = size;
         double k = size / 1024.0;
         double m = size / (1024.0 * 1024.0);
