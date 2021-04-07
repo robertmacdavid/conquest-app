@@ -27,6 +27,7 @@ import org.onlab.packet.TpPort;
 import org.onlab.util.ImmutableByteSequence;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
+import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Device;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.PortNumber;
@@ -42,6 +43,9 @@ import org.onosproject.net.flow.criteria.PiCriterion;
 import org.onosproject.net.group.Group;
 import org.onosproject.net.group.GroupDescription;
 import org.onosproject.net.group.GroupService;
+import org.onosproject.net.packet.DefaultInboundPacket;
+import org.onosproject.net.packet.DefaultPacketContext;
+import org.onosproject.net.packet.InboundPacket;
 import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
@@ -421,7 +425,12 @@ public class ConQuest implements ConQuestService {
             Ethernet packet = context.inPacket().parsed();
             DeviceId sourceDevice = context.inPacket().receivedFrom().deviceId();
 
+
             if (packet.getEtherType() == Constants.CONQUEST_ETHERTYPE) {
+
+                // ByteBuffer pktBuf = context.inPacket().unparsed();
+                // String strBuf = getHexString(pktBuf.array());
+                // log.info("Received packet-in that is for us: {}", strBuf);
 
                 byte[] bstream = packet.getPayload().serialize();
 

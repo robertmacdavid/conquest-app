@@ -77,10 +77,16 @@ public class ConQuestReport {
     }
 
     public String queueSizeString() {
-        long size = queueSize.asReadOnlyBuffer().getLong();
+        long size;
+        try {
+            size = queueSize.fit(64).asReadOnlyBuffer().getLong();
+        } catch (ImmutableByteSequence.ByteSequenceTrimException e) {
+            // This catch is impossible, just adding it to satisfy the IDE
+            return "";
+        }
 
         String hrSize = null;
-
+    
         double b = size;
         double k = size / 1024.0;
         double m = size / (1024.0 * 1024.0);
