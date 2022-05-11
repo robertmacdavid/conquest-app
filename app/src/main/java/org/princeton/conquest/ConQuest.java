@@ -430,7 +430,7 @@ public class ConQuest implements ConQuestService {
 
                 // ByteBuffer pktBuf = context.inPacket().unparsed();
                 // String strBuf = getHexString(pktBuf.array());
-                // log.info("Received packet-in that is for us: {}", strBuf);
+                log.info("Received packet-in that is for us: {}", strBuf);
 
                 byte[] bstream = packet.getPayload().serialize();
 
@@ -452,11 +452,11 @@ public class ConQuest implements ConQuestService {
                 log.info("Received ConQuest report from {}: {}", sourceDevice, report);
                 blockFlow(report);
             } else if (log.isDebugEnabled()) {
-                //log.info("Received packet-in that wasn't for us. Do nothing.");
+                log.info("Received packet-in that wasn't for us. Do nothing.");
                 ByteBuffer pktBuf = context.inPacket().unparsed();
                 String strBuf = getHexString(pktBuf.array());
-                log.debug("Received packet-in not for us from {}: {}", sourceDevice, strBuf);
-                log.debug("EtherType was: {}", packet.getEtherType());
+                log.info("Received packet-in not for us from {}: {}", sourceDevice, strBuf);
+                log.info("EtherType was: {}", packet.getEtherType());
                 log.debug(strBuf);
             }
         }
