@@ -428,8 +428,8 @@ public class ConQuest implements ConQuestService {
 
             if (packet.getEtherType() == Constants.CONQUEST_ETHERTYPE) {
 
-                // ByteBuffer pktBuf = context.inPacket().unparsed();
-                // String strBuf = getHexString(pktBuf.array());
+                ByteBuffer pktBuf = context.inPacket().unparsed();
+                String strBuf = getHexString(pktBuf.array());
                 log.info("Received packet-in that is for us: {}", strBuf);
 
                 byte[] bstream = packet.getPayload().serialize();
