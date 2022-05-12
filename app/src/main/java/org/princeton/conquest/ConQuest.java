@@ -451,7 +451,8 @@ public class ConQuest implements ConQuestService {
                 receivedReports.add(report);
                 log.info("Received ConQuest report from {}: {}", sourceDevice, report);
                 blockFlow(report);
-            } else if (log.isDebugEnabled()) {
+            //} else if (log.isDebugEnabled()) {
+            } else  {
                 log.info("Received packet-in that wasn't for us. Do nothing.");
                 ByteBuffer pktBuf = context.inPacket().unparsed();
                 String strBuf = getHexString(pktBuf.array());
